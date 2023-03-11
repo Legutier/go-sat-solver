@@ -17,6 +17,8 @@ Conflict: it happens when a variable x is set on true and false at the same time
 
 package main
 
+import "errors"
+
 type implicationGraphNode struct {
 	value         string
 	state         bool
@@ -45,11 +47,11 @@ func (graph *implicationGraph) hasConflict(value string, state bool) (bool, *imp
 	return node.state != state, node
 }
 
-func (graph *implicationGraph) addImpliedNode(value string, state bool, level int) (bool, *implicationGraphNode) {
+func (graph *implicationGraph) addImpliedNode(value string, state bool, level int) (*implicationGraphNode, error) {
 	isConflict, node := graph.hasConflict(value, state)
 	if isConflict {
 		//delete whole conflict level and send last decision node.
-		return false, node
+		return node, errors.New("GraphConflictError")
 	}
 	if node == nil {
 		newImpliedNode := implicationGraphNode{value: value, state: state, impliedLevels: []int{level}}
@@ -58,5 +60,5 @@ func (graph *implicationGraph) addImpliedNode(value string, state bool, level in
 		existingNode := graph.impliedNodes[value]
 		existingNode.impliedLevels = append(graph.impliedNodes[value].impliedLevels, level)
 	}
-	return true, graph.impliedNodes[value]
+	return graph.impliedNodes[value], nil
 }
