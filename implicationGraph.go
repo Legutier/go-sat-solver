@@ -23,6 +23,7 @@ type implicationGraphNode struct {
 	value         string
 	state         bool
 	impliedLevels []int
+	impliedNodes  []*implicationGraphNode
 }
 
 type implicationGraph struct {
@@ -39,7 +40,9 @@ func newimplicationGraph() (*implicationGraph, error) {
 	}, nil
 }
 
-func (graph *implicationGraph) hasConflict(value string, state bool) (bool, *implicationGraphNode) {
+func (graph *implicationGraph) hasConflict(
+	value string, state bool,
+) (bool, *implicationGraphNode) {
 	node, exists := graph.impliedNodes[value]
 	if !exists {
 		return false, nil
@@ -47,18 +50,35 @@ func (graph *implicationGraph) hasConflict(value string, state bool) (bool, *imp
 	return node.state != state, node
 }
 
-func (graph *implicationGraph) addImpliedNode(value string, state bool, level int) (*implicationGraphNode, error) {
+func (graph *implicationGraph) addImpliedNode(
+	value string, state bool, level int, parent *implicationGraphNode,
+) (*implicationGraphNode, error) {
 	isConflict, node := graph.hasConflict(value, state)
 	if isConflict {
 		//delete whole conflict level and send last decision node.
 		return node, errors.New("GraphConflictError")
 	}
+	var impliedNode *implicationGraphNode
 	if node == nil {
-		newImpliedNode := implicationGraphNode{value: value, state: state, impliedLevels: []int{level}}
-		graph.impliedNodes[value] = &newImpliedNode
+		impliedNode = &implicationGraphNode{
+			value: value, state: state, impliedLevels: []int{level},
+		}
+		graph.impliedNodes[value] = impliedNode
 	} else {
-		existingNode := graph.impliedNodes[value]
-		existingNode.impliedLevels = append(graph.impliedNodes[value].impliedLevels, level)
+		impliedNode = graph.impliedNodes[value]
+		impliedNode.impliedLevels = append(graph.impliedNodes[value].impliedLevels, level)
 	}
+	parent.impliedNodes = append(parent.impliedNodes, impliedNode)
 	return graph.impliedNodes[value], nil
+}
+
+func (graph *implicationGraph) addDecisionNode(
+	value string, state bool, level int,
+) (*implicationGraphNode, error) {
+	newNode := implicationGraphNode{
+		value: value, state: state, impliedLevels: []int{level},
+	}
+	newNode.impliedLevels = append(newNode.impliedLevels, level)
+	graph.decisionNodes[value] = &newNode
+	return &newNode, nil
 }
