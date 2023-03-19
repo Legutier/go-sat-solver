@@ -54,7 +54,7 @@ func (clause *Clause) canPropagateUnit(remainingLiterals []*Literal) bool {
 	return false
 }
 
-func (clause *Clause) Resolve(decisionLiteral string, literalState bool) (*bool, *Literal) {
+func (clause *Clause) resolve(decisionLiteral string, literalState bool) (*bool, *Literal) {
 	/*
 		This method tries to resolve assignation based on a partial assigment of one variable.
 
